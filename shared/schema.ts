@@ -37,9 +37,20 @@ export const insertUserSchema = createInsertSchema(users)
     vatVerified: true,
     companyAddress: true,
     vatVerificationDate: true,
-
   });
 
+// Add tax category enum
+export const TaxCategory = {
+  STANDARD: "standard",
+  REDUCED_12: "reduced",
+  REDUCED_6: "reduced",
+  ZERO: "zero",
+  EXEMPT: "exempt",
+} as const;
+
+export type TaxCategoryType = typeof TaxCategory[keyof typeof TaxCategory];
+
+// Update the invoices table to include tax category
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -47,11 +58,14 @@ export const invoices = pgTable("invoices", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   vatRate: decimal("vat_rate", { precision: 5, scale: 2 }).notNull(),
   vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull(),
+  taxCategory: text("tax_category").notNull().default("standard"),
   issueDate: date("issue_date").notNull(),
   dueDate: date("due_date").notNull(),
   status: text("status").notNull(),
+  deductions: text("deductions"),
 });
 
+// Update the invoice schema with tax category validation
 export const insertInvoiceSchema = createInsertSchema(invoices)
   .extend({
     amount: z.string()
@@ -72,15 +86,25 @@ export const insertInvoiceSchema = createInsertSchema(invoices)
         if (isNaN(num) || num < 0) throw new Error("Invalid VAT amount");
         return num.toFixed(2);
       }),
+    taxCategory: z.enum([
+      TaxCategory.STANDARD,
+      TaxCategory.REDUCED_12,
+      TaxCategory.REDUCED_6,
+      TaxCategory.ZERO,
+      TaxCategory.EXEMPT,
+    ]).default(TaxCategory.STANDARD),
+    deductions: z.string().optional(),
   })
   .pick({
     clientName: true,
     amount: true,
     vatRate: true,
     vatAmount: true,
+    taxCategory: true,
     issueDate: true,
     dueDate: true,
     status: true,
+    deductions: true,
   });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
