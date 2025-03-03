@@ -1,8 +1,11 @@
-import { InsertUser, User, Invoice, InsertInvoice } from "@shared/schema";
+import { users, invoices, type User, type InsertUser, type Invoice, type InsertInvoice } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -14,56 +17,44 @@ export interface IStorage {
   sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private invoices: Map<number, Invoice>;
-  private currentUserId: number;
-  private currentInvoiceId: number;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.invoices = new Map();
-    this.currentUserId = 1;
-    this.currentInvoiceId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async createInvoice(invoice: InsertInvoice & { userId: number }): Promise<Invoice> {
-    const id = this.currentInvoiceId++;
-    const newInvoice: Invoice = { ...invoice, id };
-    this.invoices.set(id, newInvoice);
+    const [newInvoice] = await db.insert(invoices).values(invoice).returning();
     return newInvoice;
   }
 
   async getInvoices(userId: number): Promise<Invoice[]> {
-    return Array.from(this.invoices.values()).filter(
-      (invoice) => invoice.userId === userId,
-    );
+    return db.select().from(invoices).where(eq(invoices.userId, userId));
   }
 
   async getInvoice(id: number): Promise<Invoice | undefined> {
-    return this.invoices.get(id);
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
