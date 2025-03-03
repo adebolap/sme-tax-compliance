@@ -1,6 +1,6 @@
 import { users, invoices, type User, type InsertUser, type Invoice, type InsertInvoice } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, between } from "drizzle-orm";
+import { eq, and, between, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -63,7 +63,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(invoices.userId, userId),
-          between(invoices.issueDate, startDate, endDate)
+          sql`${invoices.issueDate} BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}`
         )
       );
   }
