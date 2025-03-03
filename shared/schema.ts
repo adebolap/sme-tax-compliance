@@ -31,7 +31,7 @@ export const invoices = pgTable("invoices", {
 export const insertUserSchema = createInsertSchema(users)
   .extend({
     vatNumber: z.string()
-      .transform(val => val.replace(/[^0-9]/g, '')) // Remove non-numeric characters
+      .transform(val => val.replace(/[^0-9]/g, ''))
       .refine(val => isValidBelgianVATFormat(val), {
         message: "Invalid Belgian VAT number format. Should be 10 digits",
       }),
@@ -48,14 +48,20 @@ export const insertInvoiceSchema = createInsertSchema(invoices)
     amount: z.string()
       .transform((val) => {
         const num = parseFloat(val);
-        if (isNaN(num)) throw new Error("Invalid number");
-        return num;
+        if (isNaN(num) || num <= 0) throw new Error("Amount must be a positive number");
+        return num.toFixed(2);
       }),
     vatRate: z.string()
       .transform((val) => {
         const num = parseFloat(val);
-        if (isNaN(num)) throw new Error("Invalid number");
-        return num;
+        if (isNaN(num) || num < 0 || num > 100) throw new Error("VAT rate must be between 0 and 100");
+        return num.toFixed(2);
+      }),
+    vatAmount: z.string()
+      .transform((val) => {
+        const num = parseFloat(val);
+        if (isNaN(num) || num < 0) throw new Error("Invalid VAT amount");
+        return num.toFixed(2);
       }),
   })
   .pick({

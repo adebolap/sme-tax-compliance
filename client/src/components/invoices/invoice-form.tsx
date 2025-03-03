@@ -8,7 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import React, { useEffect } from "react"; // Added React import
+import React, { useEffect } from "react";
 
 export function InvoiceForm() {
   const { toast } = useToast();
