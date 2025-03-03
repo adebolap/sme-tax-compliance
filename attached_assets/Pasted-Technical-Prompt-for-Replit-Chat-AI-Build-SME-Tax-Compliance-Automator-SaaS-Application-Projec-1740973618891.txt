@@ -1,0 +1,217 @@
+Technical Prompt for Replit Chat AI: Build “SME Tax & Compliance Automator” SaaS Application
+
+Project Overview:
+
+Create a SaaS platform called “SME Tax & Compliance Automator” that helps small and medium-sized enterprises (SMEs) automate tax compliance, invoicing, and financial reporting. The platform should support Belgian tax rules initially, with flexibility for global expansion.
+
+Tech Stack:
+	•	Front-End: HTML, CSS, JavaScript (Vanilla or with a framework like React)
+	•	Back-End: Node.js with Express.js
+	•	Database: MongoDB (via Mongoose)
+	•	Authentication: JSON Web Tokens (JWT)
+	•	Hosting: Replit deployment
+
+Step-by-Step Prompt for Replit Chat AI:
+
+1. Project Initialization:
+
+Create a new Node.js project named "SME Tax & Compliance Automator". Initialize the project with the following packages:
+
+- express: For building the server
+- cors: To handle cross-origin requests
+- mongoose: For connecting to MongoDB
+- bcryptjs: For password hashing
+- jsonwebtoken: For authentication
+- dotenv: For managing environment variables
+
+Run:
+npm init -y
+npm install express cors mongoose bcryptjs jsonwebtoken dotenv
+
+2. Project Structure:
+
+Create the following folder structure:
+project-root/
+├── models/
+│   └── User.js
+├── routes/
+│   ├── auth.js
+│   └── invoices.js
+├── public/
+│   ├── index.html
+│   ├── login.html
+│   └── dashboard.html
+├── .env
+├── server.js
+└── package.json
+
+3. Environment Variables (.env):
+
+Add a .env file with the following variables:
+
+PORT=3000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+
+4. Server Setup (server.js):
+
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const authRoutes = require('./routes/auth');
+const invoiceRoutes = require('./routes/invoices');
+
+dotenv.config();
+const app = express();
+
+app.use(express.json());
+app.use(cors());
+app.use(express.static('public'));
+
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+app.use('/api/auth', authRoutes);
+app.use('/api/invoices', invoiceRoutes);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+5. User Model (models/User.js):
+
+const mongoose = require('mongoose');
+
+const UserSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true }
+});
+
+module.exports = mongoose.model('User', UserSchema);
+
+6. Authentication Routes (routes/auth.js):
+
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const router = express.Router();
+
+router.post('/register', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({ name, email, password: hashedPassword });
+        await user.save();
+        res.status(201).json({ message: 'User registered' });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (user && await bcrypt.compare(password, user.password)) {
+            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+            res.json({ token });
+        } else {
+            res.status(400).json({ error: 'Invalid credentials' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+module.exports = router;
+
+7. Invoice Management (routes/invoices.js):
+
+const express = require('express');
+const router = express.Router();
+
+const invoices = [];
+
+router.get('/', (req, res) => {
+    res.json(invoices);
+});
+
+router.post('/create', (req, res) => {
+    const { clientName, amount, dueDate } = req.body;
+    const newInvoice = { id: invoices.length + 1, clientName, amount, dueDate };
+    invoices.push(newInvoice);
+    res.status(201).json(newInvoice);
+});
+
+module.exports = router;
+
+8. Front-End: Simple HTML (public/index.html):
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SME Tax & Compliance Automator</title>
+</head>
+<body>
+    <h1>Welcome to SME Tax & Compliance Automator</h1>
+    <a href="login.html">Login</a> | <a href="register.html">Register</a>
+</body>
+</html>
+
+9. Front-End: Login Page (public/login.html):
+
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>Login</h2>
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Email" required><br>
+        <input type="password" id="password" placeholder="Password" required><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <script>
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                window.location.href = 'dashboard.html';
+            } else {
+                alert(data.error);
+            }
+        };
+    </script>
+</body>
+</html>
+
+10. Deployment:
+
+- Click "Run" on Replit.
+- Ensure the server runs without errors.
+- Access the app via the generated Replit URL.
+- Test registration, login, and invoice creation functionalities.
+
+11. Additional Features (Optional):
+
+- Add a reminder system for tax filing deadlines.
+- Implement multi-currency support.
+- Add a feature to upload and store financial documents securely.
+
+Final Instructions:
+
+Paste this entire prompt into the Replit Chat AI and follow its step-by-step guidance. If any issues arise, ask the AI to debug or provide additional code snippets as needed.
+
+Would you like more advanced features such as integrating with a tax API or setting up subscription billing with Stripe?
