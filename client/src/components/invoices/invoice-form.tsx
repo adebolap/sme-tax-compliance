@@ -16,7 +16,7 @@ export function InvoiceForm() {
     resolver: zodResolver(insertInvoiceSchema),
     defaultValues: {
       clientName: "",
-      amount: 0,
+      amount: undefined, // Changed from 0 to undefined
       vatRate: 21, // Default Belgian VAT rate
       vatAmount: 0,
       issueDate: new Date().toISOString().split("T")[0],
@@ -80,15 +80,19 @@ export function InvoiceForm() {
           <FormField
             control={form.control}
             name="amount"
-            render={({ field }) => (
+            render={({ field: { onChange, ...field } }) => (
               <FormItem>
                 <FormLabel>Amount (€)</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
-                    step="0.01" 
-                    {...field} 
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    step="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value === "" ? undefined : Number(e.target.value);
+                      onChange(value);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -98,15 +102,19 @@ export function InvoiceForm() {
           <FormField
             control={form.control}
             name="vatRate"
-            render={({ field }) => (
+            render={({ field: { onChange, ...field } }) => (
               <FormItem>
                 <FormLabel>VAT Rate (%)</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
-                    step="0.01" 
+                    step="0.01"
+                    placeholder="21.00"
                     {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    onChange={(e) => {
+                      const value = e.target.value === "" ? undefined : Number(e.target.value);
+                      onChange(value);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
