@@ -1,6 +1,6 @@
 import { users, invoices, type User, type InsertUser, type Invoice, type InsertInvoice } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, between } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -14,6 +14,7 @@ export interface IStorage {
   createInvoice(invoice: InsertInvoice & { userId: number }): Promise<Invoice>;
   getInvoices(userId: number): Promise<Invoice[]>;
   getInvoice(id: number): Promise<Invoice | undefined>;
+  getInvoicesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<Invoice[]>;
   sessionStore: session.Store;
 }
 
@@ -54,6 +55,17 @@ export class DatabaseStorage implements IStorage {
   async getInvoice(id: number): Promise<Invoice | undefined> {
     const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
     return invoice;
+  }
+
+  async getInvoicesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<Invoice[]> {
+    return db.select()
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.userId, userId),
+          between(invoices.issueDate, startDate, endDate)
+        )
+      );
   }
 }
 

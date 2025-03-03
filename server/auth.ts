@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { validateBelgianVAT } from "./utils/vat-validator";
+import { BelgianVATService } from "./services/belgian-tax/vat-service";
 
 declare global {
   namespace Express {
@@ -66,15 +67,22 @@ export function setupAuth(app: Express) {
         return res.status(400).send("Username already exists");
       }
 
-      // Validate VAT number
-      const isValidVAT = await validateBelgianVAT(req.body.vatNumber);
-      if (!isValidVAT) {
-        return res.status(400).send("Invalid Belgian VAT number");
+      // Validate VAT number with the VIES API
+      const vatValidation = await BelgianVATService.validateVATNumber(req.body.vatNumber);
+
+      if (!vatValidation.isValid) {
+        return res.status(400).json({
+          error: "Invalid Belgian VAT number",
+          details: vatValidation.error
+        });
       }
 
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
+        vatVerified: true,
+        companyAddress: vatValidation.details?.address,
+        vatVerificationDate: new Date(),
       });
 
       req.login(user, (err) => {

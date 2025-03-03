@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, date, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, date, decimal, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,26 +8,19 @@ const isValidBelgianVATFormat = (vat: string) => {
   return /^[0-9]{10}$/.test(cleanVAT);
 };
 
+// Add these fields to the users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   companyName: text("company_name").notNull(),
   vatNumber: text("vat_number").notNull(),
+  vatVerified: boolean("vat_verified").default(false),
+  companyAddress: text("company_address"),
+  vatVerificationDate: timestamp("vat_verification_date"),
 });
 
-export const invoices = pgTable("invoices", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  clientName: text("client_name").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  vatRate: decimal("vat_rate", { precision: 5, scale: 2 }).notNull(),
-  vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull(),
-  issueDate: date("issue_date").notNull(),
-  dueDate: date("due_date").notNull(),
-  status: text("status").notNull(),
-});
-
+// Update the insert schema to include the new fields
 export const insertUserSchema = createInsertSchema(users)
   .extend({
     vatNumber: z.string()
@@ -41,7 +34,23 @@ export const insertUserSchema = createInsertSchema(users)
     password: true,
     companyName: true,
     vatNumber: true,
+    vatVerified: true,
+    companyAddress: true,
+    vatVerificationDate: true,
+
   });
+
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  clientName: text("client_name").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  vatRate: decimal("vat_rate", { precision: 5, scale: 2 }).notNull(),
+  vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull(),
+  issueDate: date("issue_date").notNull(),
+  dueDate: date("due_date").notNull(),
+  status: text("status").notNull(),
+});
 
 export const insertInvoiceSchema = createInsertSchema(invoices)
   .extend({
