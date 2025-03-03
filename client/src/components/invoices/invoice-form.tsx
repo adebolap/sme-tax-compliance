@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 export function InvoiceForm() {
   const { toast } = useToast();
@@ -46,15 +47,15 @@ export function InvoiceForm() {
     },
   });
 
-  // Calculate VAT amount when amount or rate changes
-  form.watch((data) => {
-    const amount = Number(data.amount);
-    const vatRate = Number(data.vatRate);
+  // Use useEffect to calculate VAT amount when amount or rate changes
+  useEffect(() => {
+    const amount = Number(form.watch("amount"));
+    const vatRate = Number(form.watch("vatRate"));
     if (!isNaN(amount) && !isNaN(vatRate)) {
       const vatAmount = (amount * vatRate) / 100;
       form.setValue("vatAmount", vatAmount);
     }
-  });
+  }, [form.watch("amount"), form.watch("vatRate")]);
 
   return (
     <Form {...form}>
@@ -83,7 +84,12 @@ export function InvoiceForm() {
               <FormItem>
                 <FormLabel>Amount (€)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    {...field} 
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -96,7 +102,12 @@ export function InvoiceForm() {
               <FormItem>
                 <FormLabel>VAT Rate (%)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
