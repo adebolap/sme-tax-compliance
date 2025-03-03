@@ -8,7 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import React, { useEffect } from "react"; // Added React import
 
 export function InvoiceForm() {
   const { toast } = useToast();
@@ -16,9 +16,9 @@ export function InvoiceForm() {
     resolver: zodResolver(insertInvoiceSchema),
     defaultValues: {
       clientName: "",
-      amount: undefined, 
-      vatRate: 21, 
-      vatAmount: 0,
+      amount: "",
+      vatRate: "21",
+      vatAmount: "0",
       issueDate: new Date().toISOString().split("T")[0],
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       status: "pending",
@@ -48,13 +48,18 @@ export function InvoiceForm() {
   });
 
   useEffect(() => {
-    const amount = Number(form.watch("amount"));
-    const vatRate = Number(form.watch("vatRate"));
-    if (!isNaN(amount) && !isNaN(vatRate)) {
-      const vatAmount = (amount * vatRate) / 100;
-      form.setValue("vatAmount", vatAmount);
-    }
-  }, [form.watch("amount"), form.watch("vatRate")]);
+    const subscription = form.watch((value, { name }) => {
+      if (name === "amount" || name === "vatRate") {
+        const amount = parseFloat(form.getValues("amount") || "0");
+        const vatRate = parseFloat(form.getValues("vatRate") || "0");
+        if (!isNaN(amount) && !isNaN(vatRate)) {
+          const vatAmount = (amount * vatRate / 100).toFixed(2);
+          form.setValue("vatAmount", vatAmount);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   return (
     <Form {...form}>
