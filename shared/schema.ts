@@ -2,6 +2,12 @@ import { pgTable, text, serial, integer, date, decimal } from "drizzle-orm/pg-co
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Helper function to validate Belgian VAT number format
+const isValidBelgianVATFormat = (vat: string) => {
+  const cleanVAT = vat.replace(/[^0-9]/g, '');
+  return /^[0-9]{10}$/.test(cleanVAT);
+};
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -22,22 +28,45 @@ export const invoices = pgTable("invoices", {
   status: text("status").notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  companyName: true,
-  vatNumber: true,
-});
+export const insertUserSchema = createInsertSchema(users)
+  .extend({
+    vatNumber: z.string()
+      .transform(val => val.replace(/[^0-9]/g, '')) // Remove non-numeric characters
+      .refine(val => isValidBelgianVATFormat(val), {
+        message: "Invalid Belgian VAT number format. Should be 10 digits",
+      }),
+  })
+  .pick({
+    username: true,
+    password: true,
+    companyName: true,
+    vatNumber: true,
+  });
 
-export const insertInvoiceSchema = createInsertSchema(invoices).pick({
-  clientName: true,
-  amount: true,
-  vatRate: true,
-  vatAmount: true,
-  issueDate: true,
-  dueDate: true,
-  status: true,
-});
+export const insertInvoiceSchema = createInsertSchema(invoices)
+  .extend({
+    amount: z.string()
+      .transform((val) => {
+        const num = parseFloat(val);
+        if (isNaN(num)) throw new Error("Invalid number");
+        return num;
+      }),
+    vatRate: z.string()
+      .transform((val) => {
+        const num = parseFloat(val);
+        if (isNaN(num)) throw new Error("Invalid number");
+        return num;
+      }),
+  })
+  .pick({
+    clientName: true,
+    amount: true,
+    vatRate: true,
+    vatAmount: true,
+    issueDate: true,
+    dueDate: true,
+    status: true,
+  });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

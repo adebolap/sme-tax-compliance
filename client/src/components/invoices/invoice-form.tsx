@@ -16,8 +16,8 @@ export function InvoiceForm() {
     resolver: zodResolver(insertInvoiceSchema),
     defaultValues: {
       clientName: "",
-      amount: undefined, // Changed from 0 to undefined
-      vatRate: 21, // Default Belgian VAT rate
+      amount: undefined, 
+      vatRate: 21, 
       vatAmount: 0,
       issueDate: new Date().toISOString().split("T")[0],
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
@@ -47,7 +47,6 @@ export function InvoiceForm() {
     },
   });
 
-  // Use useEffect to calculate VAT amount when amount or rate changes
   useEffect(() => {
     const amount = Number(form.watch("amount"));
     const vatRate = Number(form.watch("vatRate"));
@@ -80,18 +79,17 @@ export function InvoiceForm() {
           <FormField
             control={form.control}
             name="amount"
-            render={({ field: { onChange, ...field } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Amount (€)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
-                    step="0.01"
+                    type="text"
                     placeholder="0.00"
                     {...field}
                     onChange={(e) => {
-                      const value = e.target.value === "" ? undefined : Number(e.target.value);
-                      onChange(value);
+                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      field.onChange(value);
                     }}
                   />
                 </FormControl>
@@ -102,18 +100,17 @@ export function InvoiceForm() {
           <FormField
             control={form.control}
             name="vatRate"
-            render={({ field: { onChange, ...field } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>VAT Rate (%)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
-                    step="0.01"
+                    type="text"
                     placeholder="21.00"
                     {...field}
                     onChange={(e) => {
-                      const value = e.target.value === "" ? undefined : Number(e.target.value);
-                      onChange(value);
+                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      field.onChange(value);
                     }}
                   />
                 </FormControl>
