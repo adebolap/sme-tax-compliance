@@ -89,11 +89,13 @@ export function InvoiceForm() {
                 <FormLabel>Amount (€)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="text"
+                    type="number"
+                    min="0"
+                    step="0.01"
                     placeholder="0.00"
                     {...field}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      const value = e.target.value === "" ? "" : e.target.value;
                       field.onChange(value);
                     }}
                   />
@@ -110,11 +112,14 @@ export function InvoiceForm() {
                 <FormLabel>VAT Rate (%)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="text"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
                     placeholder="21.00"
                     {...field}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      const value = e.target.value === "" ? "" : e.target.value;
                       field.onChange(value);
                     }}
                   />
